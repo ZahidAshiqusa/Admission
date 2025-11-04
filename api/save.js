@@ -1,109 +1,56 @@
-// api/save.js
+// api/save.js (debug version)
 import { Octokit } from "@octokit/rest";
-
-export const config = {
-  api: {
-    bodyParser: false, // because we handle multipart manually
-  },
-};
-
 import formidable from "formidable";
 import fs from "fs/promises";
 
+export const config = { api: { bodyParser: false } };
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Only POST allowed" });
 
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  const GITHUB_REPO = process.env.GITHUB_REPO;
-
+  const { GITHUB_TOKEN, GITHUB_REPO } = process.env;
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
-    return res.status(500).json({
-      error: "Missing GitHub configuration. Please set GITHUB_TOKEN and GITHUB_REPO in environment variables.",
-    });
+    return res.status(500).json({ error: "Missing GitHub configuration" });
   }
 
-  const octokit = new Octokit({ auth: GITHUB_TOKEN });
   const [owner, repo] = GITHUB_REPO.split("/");
-
+  const octokit = new Octokit({ auth: GITHUB_TOKEN });
   const form = formidable({ multiples: true, keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error("Form parse error:", err);
-      return res.status(400).json({ error: "Failed to parse form data" });
-    }
+    if (err) return res.status(400).json({ error: "Form parse failed" });
 
-    const studentName = fields.studentName?.[0] || fields.studentName;
-    const fatherName = fields.fatherName?.[0] || fields.fatherName;
-    const cnicNumber = fields.cnicNumber?.[0] || fields.cnicNumber;
-    const phone = fields.phoneNumber?.[0] || fields.phoneNumber;
-    const address = fields.address?.[0] || fields.address;
-    const group = fields.group?.[0] || fields.group;
-    const category = fields.category?.[0] || fields.category;
+    const cnic = fields.cnicNumber?.[0] || fields.cnicNumber;
+    if (!cnic) return res.status(400).json({ error: "Missing CNIC" });
 
-    if (!cnicNumber) {
-      return res.status(400).json({ error: "Missing CNIC number" });
-    }
-
-    const folderPath = `submissions/${cnicNumber}`;
-    const dataContent = `Student Name: ${studentName || "-"}\nFather Name: ${fatherName || "-"}\nCNIC: ${cnicNumber}\nPhone: ${phone || "-"}\nAddress: ${address || "-"}\nGroup: ${group || "-"}\nCategory: ${category || "-"}`;
+    const folderPath = `submissions/${cnic}`;
+    const dataFile = `${folderPath}/data.txt`;
+    const dataText = JSON.stringify(fields, null, 2);
 
     try {
-      // Save data.txt (create or update existing)
-      const dataFilePath = `${folderPath}/data.txt`;
-
-      // Try fetching existing file
+      // check if file exists
       let sha;
       try {
-        const { data } = await octokit.repos.getContent({ owner, repo, path: dataFilePath });
+        const { data } = await octokit.repos.getContent({ owner, repo, path: dataFile });
         sha = data.sha;
       } catch {
-        sha = undefined; // File doesn’t exist yet
+        sha = undefined;
       }
 
       await octokit.repos.createOrUpdateFileContents({
         owner,
         repo,
-        path: dataFilePath,
-        message: `Update admission for CNIC ${cnicNumber}`,
-        content: Buffer.from(dataContent).toString("base64"),
+        path: dataFile,
+        message: `Update submission for CNIC ${cnic}`,
+        content: Buffer.from(dataText).toString("base64"),
         sha,
       });
 
-      // Upload all images if present
-      for (const [key, fileObj] of Object.entries(files)) {
-        const file = Array.isArray(fileObj) ? fileObj[0] : fileObj;
-        if (!file || !file.filepath) continue;
-        const buffer = await fs.readFile(file.filepath);
-        const uploadPath = `${folderPath}/${file.originalFilename}`;
-
-        try {
-          const { data } = await octokit.repos.getContent({ owner, repo, path: uploadPath });
-          await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: uploadPath,
-            message: `Update file ${file.originalFilename} for CNIC ${cnicNumber}`,
-            content: buffer.toString("base64"),
-            sha: data.sha,
-          });
-        } catch {
-          await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path: uploadPath,
-            message: `Add file ${file.originalFilename} for CNIC ${cnicNumber}`,
-            content: buffer.toString("base64"),
-          });
-        }
-      }
-
-      return res.status(200).json({ success: true, message: "Data saved successfully" });
+      return res.status(200).json({ success: true });
     } catch (error) {
-      console.error("Save error:", error);
-      return res.status(500).json({ error: `GitHub save failed: ${error.message}` });
+      console.error("GitHub upload error details:", error);
+      const msg = error.response?.data?.message || error.message || "Unknown GitHub error";
+      return res.status(500).json({ error: msg });
     }
   });
-        }
+      }
