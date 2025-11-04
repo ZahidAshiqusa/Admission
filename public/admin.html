@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Admin - Submissions</title><link rel="stylesheet" href="/style.css"></head><body>
+<div class="container">
+  <div id="loginBox" class="section">
+    <h2>Admin Login</h2>
+    <input id="adminPass" type="password" placeholder="Enter Admin Password" style="padding:8px;border-radius:8px;border:1px solid #ddd;width:260px"/>
+    <button class="btn" onclick="login()">Login</button>
+    <div id="loginError" class="muted" style="color:red;margin-top:8px"></div>
+  </div>
+
+  <div id="panel" class="hidden">
+    <h2>Student Submissions</h2>
+    <table class="table">
+      <thead><tr><th>CNIC</th><th>Path</th><th>Download</th></tr></thead>
+      <tbody id="listBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function login(){
+  const pass = document.getElementById('adminPass').value;
+  const r = await fetch('/api/auth?password='+encodeURIComponent(pass));
+  const j = await r.json();
+  if(j.success){ document.getElementById('loginBox').style.display='none'; document.getElementById('panel').classList.remove('hidden'); loadList(); }
+  else { document.getElementById('loginError').innerText = j.message || 'Invalid password'; }
+}
+
+async function loadList(){
+  const r = await fetch('/api/list');
+  const j = await r.json();
+  if(!j.ok){ document.getElementById('loginError').innerText = j.message; return; }
+  const tbody = document.getElementById('listBody');
+  tbody.innerHTML='';
+  for(const it of j.submissions){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${it.cnic}</td><td>${it.path}</td><td><button class="btn" onclick="download('${it.path}')">Download ZIP</button></td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function download(path){ window.open('/api/download?path='+encodeURIComponent(path),'_blank'); }
+</script>
+</body></html>

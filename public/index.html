@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ali Institute Admission Form</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header><img src="logo.png" alt="logo" onerror="this.style.display='none'"/><div><h1>Ali Institute Admission Form</h1><div class="note">Fill form and click Next — uploads optional. Submissions saved to GitHub by CNIC.</div></div></header>
+    <form id="form" onsubmit="return onSubmit(event)">
+      <div class="section" id="mainForm">
+        <h3>Admission Form</h3>
+        <div class="grid">
+          <div><label>Student Name</label><input name="studentName" required type="text" placeholder="Full name"></div>
+          <div><label>Father name</label><input name="fatherName" required type="text" placeholder="Father's name"></div>
+          <div><label>CNIC number</label><input name="cnic" id="cnic" required type="text" placeholder="XXXXX-XXXXXXX-X"></div>
+          <div><label>Phone number</label><input name="phone" required type="text" placeholder="+92..."></div>
+          <div class="full"><label>Address</label><input name="address" required type="text" placeholder="Address"></div>
+          <div><label>Group</label><select name="group" id="groupSelect" required onchange="onGroupChange()"><option value="">Select group</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+          <div><label>Category</label><select name="category" id="categorySelect" required><option value="">Select category</option></select></div>
+        </div>
+        <div style="margin-top:14px;text-align:right"><button type="button" class="btn" onclick="showDocs()">Next →</button></div>
+      </div>
+
+      <div class="section" id="docsSection" style="margin-top:12px;display:none">
+        <h3>Required Documents <span class="muted">(uploads optional)</span></h3>
+        <div><label>CNIC or B.FORM PIC</label><input type="file" name="cnicPic" accept="image/*"></div>
+        <div style="margin-top:10px"><label>MATRIC RESULT CARD PIC</label><div id="educationArea"><div class="edu-row"><input type="text" name="educationNames[]" placeholder="INPUT EDUCATION (e.g. Matric)" /><input type="file" name="educationFiles[]" accept="image/*" /></div></div><div style="margin-top:8px"><button type="button" class="add-btn" onclick="addEducation()">＋ Add more education</button></div></div>
+        <div style="margin-top:12px"><label>FATHER CNIC PIC</label><input type="file" name="fatherCnicPic" accept="image/*"></div>
+        <div style="margin-top:12px"><label>Domicile pic</label><input type="file" name="domicilePic" accept="image/*"></div>
+        <div style="margin-top:12px"><label>Candidate pic</label><input type="file" name="candidatePic" accept="image/*"></div>
+        <div style="margin-top:14px;text-align:right"><button type="submit" class="btn">Submit</button></div>
+      </div>
+    </form>
+    <div id="status" style="margin-top:12px"></div>
+  </div>
+<script src="/script.js"></script>
+</body>
+</html>
