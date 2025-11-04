@@ -1,0 +1,1 @@
+studentName: Zahid\nfatherName: Ashiq\ncnic: 31102-5446852-7\nphone: 03299931199\naddress: shaili gharbi\ngroup: 2\ncategory: 65\neducationNames[]: 
